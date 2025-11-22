@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Superset-style Mock — White Theme (Option C)</title>
+  <style>
+    :root{
+      --white:#ffffff;
+      --muted:#6b7280;
+      --accent:#2563eb;
+      --danger:#dc2626;
+      --success:#16a34a;
+      --card:#f8fafc;
+      --text:#0f172a;
+      font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    html,body{ height:100%; margin:0; background:var(--white); color:var(--text); }
+    .shell{ min-height:100vh; display:flex; gap:20px; padding:22px; align-items:flex-start; box-sizing:border-box; }
+
+    /* Sidebar */
+    .sidebar{
+      width:300px; padding:16px; border-radius:12px;
+      background: var(--card);
+      color:var(--text); border:1px solid #e6eef6; box-shadow: 0 6px 22px rgba(10,20,40,0.04);
+    }
+    .sidebar h3{ margin:0 0 12px; font-size:15px; font-weight:700; color:var(--text); }
+    .section-list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+    .section-item{ display:flex; align-items:center; gap:10px; padding:10px; border-radius:8px; cursor:pointer; transition:background .12s; background:transparent; }
+    .section-item:hover{ background:#eef6ff; }
+    .dot{ width:10px; height:10px; border-radius:50%; background: var(--success); flex:0 0 10px; box-shadow: 0 2px 6px rgba(37,163,91,0.12); }
+    .dot.pending{ background: #f59e0b; box-shadow: 0 2px 6px rgba(245,158,11,0.12); }
+    .sidebar .meta{ margin-top:12px; font-size:13px; color:var(--muted); }
+
+    /* Main content */
+    .content{ flex:1; display:flex; flex-direction:column; gap:14px; }
+    .topbar{ display:flex; justify-content:space-between; align-items:center; color:var(--text); }
+    .timer{ background:#f1f5f9; padding:8px 12px; border-radius:10px; font-weight:700; min-width:120px; text-align:center; color:var(--muted); border:1px solid #e6eef6; }
+
+    .exam-area{ border-radius:12px; padding:18px; min-height:70vh; background:var(--white); border:1px solid #e6eef6; box-shadow:0 8px 30px rgba(15,23,42,0.04); overflow:auto; }
+
+    .start-screen{ text-align:center; padding:36px 20px; }
+    .btn{ padding:10px 14px; border-radius:8px; border:0; cursor:pointer; font-weight:700; min-width:120px; }
+    .btn-primary{ background:var(--accent); color:white; box-shadow:0 6px 18px rgba(37,99,235,0.12); }
+    .btn-ghost{ background:white; color:var(--text); border:1px solid #e6eef6; }
+
+    /* Question card */
+    .section-header{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+    .q-card{ background:#fff; color:var(--text); border-radius:10px; padding:14px; margin-bottom:12px; box-shadow: 0 6px 18px rgba(10,20,35,0.04); border:1px solid #eef6fb; }
+    .q-title{ font-weight:700; margin-bottom:8px; font-size:15px; color:var(--text); }
+    .options{ display:flex; flex-direction:column; gap:8px; }
+    .option{
+      display:flex; align-items:center; gap:10px; padding:10px; border-radius:8px; cursor:pointer; border:1px solid #edf2f7; background: #fff;
+    }
+    .option input{ transform:scale(1.05); margin-right:6px; }
+
+    .nav-row{ display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
+    .progress{ font-size:13px; color:var(--muted); }
+
+    /* Email template styles */
+    .email-box{ display:flex; flex-direction:column; gap:8px; }
+    .field-row{ display:flex; gap:8px; align-items:center; }
+    .field-row input[type="text"]{ flex:1; padding:10px; border-radius:8px; border:1px solid #e6eef6; }
+    .textarea{ width:100%; min-height:180px; padding:12px; border-radius:8px; border:1px solid #e6eef6; resize:vertical; }
+
+    /* Business reply */
+    .reply-box{ display:flex; flex-direction:column; gap:8px; }
+    .small-help{ font-size:13px; color:var(--muted); }
+
+    /* Modal */
+    .overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background: rgba(5,12,20,0.3); z-index:40; padding: 20px; }
+    .modal{ width:880px; max-width:96%; border-radius:12px; background: #fff; box-shadow: 0 10px 40px rgba(15,30,50,0.12); padding:18px; color:var(--text); border:1px solid #e6eef6; }
+    .summary-table{ width:100%; border-collapse:collapse; margin-top:8px; }
+    .summary-table thead th{ text-align:left; font-weight:700; font-size:13px; color:var(--muted); padding-bottom:10px; }
+    .summary-table td{ padding:12px 8px; vertical-align:middle; font-size:14px; color:var(--text); }
+    .status-badge{ display:inline-block; padding:6px 10px; border-radius:999px; font-size:12px; color:white; background: var(--success); min-width:84px; text-align:center; }
+
+    .feedback { background:#f8fafc; border:1px solid #e6eef6; padding:10px; border-radius:8px; color:var(--muted); font-size:14px; }
+
+    @media (max-width:900px){
+      .sidebar{ display:none; }
+      .modal{ width:94%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Sections list">
+      <h3>Sections</h3>
+      <div class="section-list" id="sidebar-list"></div>
+      <div class="meta">Click <strong>Start Test</strong> to begin. Single-section flow. Total time shown on the top-right.</div>
+    </aside>
+
+    <main class="content" role="main">
+      <div class="topbar">
+        <div style="color:var(--text);"><strong>Assessment: Workplace Communications (Full — 5 Q / section)</strong></div>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <div class="timer" id="timer">00:45:00</div>
+          <div style="color:var(--muted); font-size:13px;">Instructions & Guidelines</div>
+        </div>
+      </div>
+
+      <section class="exam-area" aria-label="Exam content">
+        <!-- Start screen -->
+        <div id="start-screen" class="start-screen">
+          <h2 style="margin:0 0 8px 0; color:var(--text);">Welcome — Full Mock Assessment</h2>
+          <p style="margin:0 0 20px 0; color:var(--muted);">This demo uses 5 questions per MCQ section (Option C). Section 1 is an email reply. Section 5 is a short business reply.</p>
+          <div style="display:flex;gap:12px;justify-content:center;">
+            <button class="btn btn-primary" id="start-btn">Start Test</button>
+            <button class="btn btn-ghost" id="demo-reset">Reset Demo</button>
+          </div>
+        </div>
+
+        <!-- Question area (hidden until start) -->
+        <div id="test-area" style="display:none;">
+          <div class="section-header">
+            <div>
+              <div id="section-title" style="font-size:16px; font-weight:800; color:var(--text);"></div>
+              <div style="font-size:13px; color:var(--muted);" id="section-sub"></div>
+            </div>
+            <div style="text-align:right;">
+              <div class="progress" id="progress-text"></div>
+            </div>
+          </div>
+
+          <div id="questions-container"></div>
+
+          <div class="nav-row">
+            <div>
+              <button class="btn btn-ghost" id="prev-btn">Previous</button>
+              <button class="btn btn-primary" id="next-btn">Next</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button class="btn btn-ghost" id="open-summary-btn">Submit Summary</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Summary Modal -->
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" style="display:none;">
+    <div class="modal" role="document" aria-labelledby="modal-title">
+      <h3 id="modal-title">Assessment Submission Summary</h3>
+
+      <table class="summary-table" aria-describedby="summary-desc">
+        <thead>
+          <tr>
+            <th style="width:46%;">Section</th>
+            <th style="width:18%;">Questions</th>
+            <th style="width:18%;">Attempted</th>
+            <th style="width:18%;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="summary-body"></tbody>
+      </table>
+
+      <div style="display:flex; justify-content:space-between; margin-top:12px; font-size:13px; color:var(--muted);">
+        <div id="summary-note"></div>
+        <div><strong>Total Time Left:</strong> <span id="time-left-summary"></span></div>
+      </div>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px;">
+        <button class="btn btn-ghost" id="btn-no">No, Wait</button>
+        <button class="btn btn-primary" id="btn-yes">Yes, Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**************************************
+     * Full data: 5 questions per MCQ section
+     * Section 1 = Email (full form)
+     * Section 5 = Business reply (textarea)
+     **************************************/
+
+    // Sections config
+    const sections = [
+      { key:'situational', name:'Situational Awareness & Response (Email)', type:'email', questions: [] },
+      { key:'reading', name:'Workplace Reading Comprehension', type:'mcq', questions: [
+          { id:'r1', text:'Which best summarizes "We must increase testing before release"?', options:['Stop release','Increase testing','Hire testers only','Outsource everything'], answerIndex:1 },
+          { id:'r2', text:'EOD typically means:', options:['End of day','End of department','End of details','Every other day'], answerIndex:0 },
+          { id:'r3', text:'"Whereas" in a sentence usually signals:', options:['Similarity','Contrast','Example','Conclusion'], answerIndex:1 },
+          { id:'r4', text:'A memo asks for "action by Friday." This indicates:', options:['Optional','Required by Friday','Done already','Not important'], answerIndex:1 },
+          { id:'r5', text:'If a document is "confidential", you should:', options:['Share freely','Restrict access','Publish online','Ignore label'], answerIndex:1 }
+      ]},
+      { key:'listening', name:'Workplace Listening Comprehension', type:'mcq', questions: [
+          { id:'l1', text:'If a speaker repeats a point, it means:', options:['They forgot','It’s important','Irrelevant','Wrong'], answerIndex:1 },
+          { id:'l2', text:'"I’ll loop you in" means:', options:['Exclude you','Include you in communication','Fire you','Call you later'], answerIndex:1 },
+          { id:'l3', text:'When someone asks "Any questions?" you should:', options:['Silent','Ask for clarification if unsure','Leave','Ignore'], answerIndex:1 },
+          { id:'l4', text:'A tone that is calm and measured is usually:', options:['Unprofessional','Assertive/professional','Aggressive','Confused'], answerIndex:1 },
+          { id:'l5', text:'If a speaker uses "we recommend", they are:', options:['Giving advice','Telling a joke','Asking a favour','Ending speech'], answerIndex:0 }
+      ]},
+      { key:'spoken', name:'Spoken Communication Simulation', type:'mcq', questions: [
+          { id:'s1', text:'If interrupted, best action is:', options:['Interrupt back','Politely ask to finish','Shout','Leave call'], answerIndex:1 },
+          { id:'s2', text:'Don’t understand a term — you should:', options:['Guess','Ask clarifying question','Ignore','Laugh'], answerIndex:1 },
+          { id:'s3', text:'On a video call you should:', options:['Keep camera off always','Mute when not speaking','Eat loudly','Multitask openly'], answerIndex:1 },
+          { id:'s4', text:'When agreeing you should:', options:['Say nothing','Summarize main point','Change topic','Disagree'], answerIndex:1 },
+          { id:'s5', text:'To politely decline extra work, you should:', options:['Refuse angrily','Explain workload & offer alternative','Ignore','Promise immediately'], answerIndex:1 }
+      ]},
+      { key:'writing', name:'Business Communication Writing (Short Reply)', type:'reply', questions: [] },
+      { key:'grammar', name:'Grammar & Sentence Correction', type:'mcq', questions: [
+          { id:'g1', text:'Choose correct: "She and I ____ to the meeting."', options:['goes','go','is going','going'], answerIndex:1 },
+          { id:'g2', text:'Correct form: "If he ____ earlier, he would have caught the train."', options:['arrived','had arrived','arrives','arriving'], answerIndex:1 },
+          { id:'g3', text:'Pronoun: "Everyone must submit ____ report."', options:['their','his or her','them','they'], answerIndex:1 },
+          { id:'g4', text:'Choose: "Neither the manager nor the employees ____ ready."', options:['is','are','were','be'], answerIndex:1 },
+          { id:'g5', text:'Select correct: "He suggested that she ____ the file."', options:['open','opens','opened','opening'], answerIndex:0 }
+      ]}
+    ];
+
+    // UI state
+    let currentSectionIndex = 0;
+    let started = false;
+    // For Option C approximate time: set 45 minutes for full test
+    const totalTestSeconds = 45 * 60;
+    let remainingSeconds = totalTestSeconds;
+    let timerInterval = null;
+    let autoSubmitOnTimerEnd = true;
+
+    // Answers storage
+    const answers = {
+      mcq: {},        // { qid: optionIndex }
+      email: { to:'', subject:'', body:'' },
+      reply: { text:'' }
+    };
+
+    // DOM refs
+    const sidebarList = document.getElementById('sidebar-list');
+    const startScreen = document.getElementById('start-screen');
+    const testArea = document.getElementById('test-area');
+    const startBtn = document.getElementById('start-btn');
+    const resetBtn = document.getElementById('demo-reset');
+    const sectionTitle = document.getElementById('section-title');
+    const sectionSub = document.getElementById('section-sub');
+    const questionsContainer = document.getElementById('questions-container');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const progressText = document.getElementById('progress-text');
+    const timerEl = document.getElementById('timer');
+    const overlay = document.getElementById('overlay');
+    const summaryBody = document.getElementById('summary-body');
+    const btnNo = document.getElementById('btn-no');
+    const btnYes = document.getElementById('btn-yes');
+    const openSummaryBtn = document.getElementById('open-summary-btn');
+    const timeLeftSummary = document.getElementById('time-left-summary');
+    const summaryNote = document.getElementById('summary-note');
+
+    // Render sidebar with progress dots
+    function renderSidebar(){
+      sidebarList.innerHTML = '';
+      sections.forEach((s, idx) => {
+        const div = document.createElement('div');
+        div.className = 'section-item';
+        div.dataset.index = idx;
+        const dot = document.createElement('span');
+        const completed = checkSectionCompleted(idx);
+        dot.className = 'dot ' + (completed ? '' : 'pending');
+        const label = document.createElement('div');
+        const attempted = getAttemptedCountBySection(idx);
+        const qcount = (s.type === 'mcq') ? s.questions.length : 1;
+        label.innerHTML = `<strong style="font-size:13px">${s.name}</strong><div style="font-size:12px; color:var(--muted); margin-top:4px;">${attempted}/${qcount} attempted</div>`;
+        div.appendChild(dot); div.appendChild(label);
+        div.addEventListener('click', () => {
+          if (!started) return;
+          goToSection(idx);
+        });
+        sidebarList.appendChild(div);
+      });
+    }
+
+    function checkSectionCompleted(index){
+      const s = sections[index];
+      if (s.type === 'mcq'){
+        const attempted = s.questions.reduce((a,q) => a + (answers.mcq[q.id] !== undefined ? 1 : 0), 0);
+        return s.questions.length > 0 && attempted === s.questions.length;
+      } else if (s.type === 'email'){
+        return (answers.email.body && answers.email.body.trim().length > 10 && answers.email.subject.trim().length > 0);
+      } else if (s.type === 'reply'){
+        return answers.reply.text && answers.reply.text.trim().length > 10;
+      }
+      return false;
+    }
+
+    function getAttemptedCountBySection(index){
+      const s = sections[index];
+      if (s.type === 'mcq'){
+        return s.questions.reduce((a,q) => a + (answers.mcq[q.id] !== undefined ? 1 : 0), 0);
+      } else if (s.type === 'email'){
+        return (answers.email.body && answers.email.body.trim().length>0) || (answers.email.subject && answers.email.subject.trim().length>0) ? 1 : 0;
+      } else if (s.type === 'reply'){
+        return answers.reply.text && answers.reply.text.trim().length>0 ? 1 : 0;
+      }
+      return 0;
+    }
+
+    // Start test
+    startBtn.addEventListener('click', () => {
+      started = true;
+      startScreen.style.display = 'none';
+      testArea.style.display = 'block';
+      currentSectionIndex = 0;
+      renderSidebar();
+      renderCurrentSection();
+      startTimer();
+      // focus first input for accessibility after a small delay
+      setTimeout(() => {
+        const firstInput = document.querySelector('#questions-container input, #questions-container textarea');
+        if (firstInput) firstInput.focus();
+      }, 250);
+    });
+
+    resetBtn.addEventListener('click', () => {
+      // reset answers & UI
+      answers.mcq = {};
+      answers.email = { to:'', subject:'', body:'' };
+      answers.reply = { text:'' };
+      remainingSeconds = totalTestSeconds;
+      started = false;
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+      startScreen.style.display = 'block';
+      testArea.style.display = 'none';
+      renderSidebar();
+      updateTimerDisplay();
+    });
+
+    function startTimer(){
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        remainingSeconds--;
+        updateTimerDisplay();
+        if (remainingSeconds <= 0){
+          clearInterval(timerInterval);
+          timerInterval = null;
+          updateTimerDisplay();
+          if (autoSubmitOnTimerEnd) openSummary(true);
+          else openSummary(false);
+        }
+      }, 1000);
+      updateTimerDisplay();
+    }
+
+    function updateTimerDisplay(){
+      const h = Math.floor(remainingSeconds / 3600);
+      const m = Math.floor((remainingSeconds % 3600) / 60);
+      const s = Math.floor(remainingSeconds % 60);
+      timerEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    // Render current section content
+    function renderCurrentSection(){
+      const s = sections[currentSectionIndex];
+      sectionTitle.textContent = s.name;
+      sectionSub.textContent = `Section ${currentSectionIndex + 1} of ${sections.length}`;
+      progressText.textContent = `Attempted: ${getAttemptedCountBySection(currentSectionIndex)}/${(s.type==='mcq'? s.questions.length : 1)}`;
+      questionsContainer.innerHTML = '';
+
+      if (s.type === 'mcq'){
+        s.questions.forEach((q, idx) => {
+          const card = document.createElement('div');
+          card.className = 'q-card';
+          const title = document.createElement('div'); title.className='q-title'; title.textContent = `Q${idx+1}. ${q.text}`;
+          card.appendChild(title);
+
+          const opts = document.createElement('div'); opts.className='options';
+          q.options.forEach((opt, oi) => {
+            const label = document.createElement('label'); label.className='option';
+            const input = document.createElement('input'); input.type='radio'; input.name=q.id; input.value=oi;
+            input.checked = answers.mcq[q.id] === oi;
+            input.addEventListener('change', (e) => {
+              answers.mcq[q.id] = Number(e.target.value);
+              renderSidebar();
+              progressText.textContent = `Attempted: ${getAttemptedCountBySection(currentSectionIndex)}/${s.questions.length}`;
+            });
+            const span = document.createElement('span'); span.textContent = opt;
+            label.appendChild(input); label.appendChild(span); opts.appendChild(label);
+          });
+          card.appendChild(opts);
+          questionsContainer.appendChild(card);
+        });
+      } else if (s.type === 'email'){
+        const card = document.createElement('div'); card.className='q-card';
+        const title = document.createElement('div'); title.className='q-title'; title.textContent='Compose your reply email';
+        card.appendChild(title);
+
+        const emailBox = document.createElement('div'); emailBox.className='email-box';
+
+        // To
+        const toRow = document.createElement('div'); toRow.className='field-row';
+        const toLabel = document.createElement('div'); toLabel.style.minWidth='60px'; toLabel.style.fontWeight='600'; toLabel.textContent='To:';
+        const toInput = document.createElement('input'); toInput.type='text'; toInput.placeholder='client@example.com'; toInput.value=answers.email.to||'';
+        toInput.addEventListener('input', (e)=> { answers.email.to = e.target.value; renderSidebar(); });
+        toRow.appendChild(toLabel); toRow.appendChild(toInput); emailBox.appendChild(toRow);
+
+        // Subject
+        const subjRow = document.createElement('div'); subjRow.className='field-row';
+        const subjLabel = document.createElement('div'); subjLabel.style.minWidth='60px'; subjLabel.style.fontWeight='600'; subjLabel.textContent='Subject:';
+        const subjInput = document.createElement('input'); subjInput.type='text'; subjInput.placeholder='Re: Project update'; subjInput.value = answers.email.subject||'';
+        subjInput.addEventListener('input', (e)=> { answers.email.subject = e.target.value; renderSidebar(); });
+        subjRow.appendChild(subjLabel); subjRow.appendChild(subjInput); emailBox.appendChild(subjRow);
+
+        // Body
+        const bodyRow = document.createElement('div'); bodyRow.style.display='flex'; bodyRow.style.gap='8px';
+        const bodyLabel = document.createElement('div'); bodyLabel.style.minWidth='60px'; bodyLabel.style.fontWeight='600'; bodyLabel.textContent='Message:';
+        const bodyArea = document.createElement('textarea'); bodyArea.className='textarea'; bodyArea.placeholder='Write your response here...'; bodyArea.value = answers.email.body||'';
+        bodyArea.addEventListener('input', (e)=> { answers.email.body = e.target.value; renderSidebar(); });
+        bodyRow.appendChild(bodyLabel); bodyRow.appendChild(bodyArea); emailBox.appendChild(bodyRow);
+
+        const help = document.createElement('div'); help.className='small-help'; help.textContent='Tip: Start with a greeting ("Hi Anna,") and be concise. Include next steps.';
+        card.appendChild(emailBox); card.appendChild(help);
+        questionsContainer.appendChild(card);
+      } else if (s.type === 'reply'){
+        const card = document.createElement('div'); card.className='q-card';
+        const title = document.createElement('div'); title.className='q-title'; title.textContent='Business situation — Write a short reply';
+        card.appendChild(title);
+
+        // dynamic situation sample — could randomize if desired
+        const situation = document.createElement('div'); situation.className='feedback'; situation.style.marginBottom='10px';
+        situation.innerHTML = '<strong>Situation:</strong> A teammate asks you to take urgent work today, but you have overlapping deadlines. Politely respond and propose an alternative.';
+        card.appendChild(situation);
+
+        const replyBox = document.createElement('div'); replyBox.className='reply-box';
+        const replyArea = document.createElement('textarea'); replyArea.className='textarea'; replyArea.placeholder='Write your short reply here...'; replyArea.value = answers.reply.text||'';
+        replyArea.addEventListener('input', (e)=> { answers.reply.text = e.target.value; renderSidebar(); });
+        replyBox.appendChild(replyArea);
+        const note = document.createElement('div'); note.className='small-help'; note.textContent='Keep it short. Offer a time or alternative if you cannot do it immediately.';
+        replyBox.appendChild(note);
+        card.appendChild(replyBox);
+        questionsContainer.appendChild(card);
+      }
+
+      prevBtn.disabled = currentSectionIndex === 0;
+      nextBtn.textContent = (currentSectionIndex === sections.length - 1) ? 'Finish & Review' : 'Next';
+
+      // focus first input for accessibility
+      setTimeout(() => {
+        const first = questionsContainer.querySelector('input, textarea');
+        if (first) first.focus();
+      }, 120);
+    }
+
+    function goToSection(idx){
+      if (idx < 0 || idx >= sections.length) return;
+      currentSectionIndex = idx;
+      renderCurrentSection();
+    }
+
+    prevBtn.addEventListener('click', () => {
+      if (currentSectionIndex > 0) { currentSectionIndex--; renderCurrentSection(); }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (currentSectionIndex < sections.length - 1) { currentSectionIndex++; renderCurrentSection(); }
+      else openSummary(false);
+    });
+
+    // Summary modal
+    function openSummary(autoSubmit=false){
+      summaryBody.innerHTML = '';
+      sections.forEach((s, i) => {
+        const tr = document.createElement('tr');
+        const tdS = document.createElement('td'); tdS.innerHTML = `<strong style="font-size:13px">${s.name}</strong>`;
+        const tdQ = document.createElement('td'); tdQ.textContent = (s.type==='mcq'? s.questions.length : 1);
+        const tdA = document.createElement('td'); tdA.textContent = getAttemptedCountBySection(i);
+        const tdSt = document.createElement('td');
+        const attempted = Number(tdA.textContent);
+        const badge = document.createElement('span'); badge.className='status-badge';
+        if (attempted >= ((s.type==='mcq')? s.questions.length : 1)) { badge.textContent='Completed'; }
+        else if (attempted === 0) { badge.textContent='Not Attempted'; badge.style.background='#ef4444'; }
+        else { badge.textContent='Partially'; badge.style.background='#f59e0b'; }
+        tdSt.appendChild(badge);
+        tr.appendChild(tdS); tr.appendChild(tdQ); tr.appendChild(tdA); tr.appendChild(tdSt);
+        summaryBody.appendChild(tr);
+      });
+
+      // time left
+      const h = Math.floor(remainingSeconds / 3600);
+      const m = Math.floor((remainingSeconds % 3600) / 60);
+      const s = Math.floor(remainingSeconds % 60);
+      timeLeftSummary.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+      const totalQuestions = sections.reduce((acc,s)=> acc + ((s.type==='mcq')? s.questions.length : 1),0);
+      const totalAttempted = sections.reduce((acc,_,i)=> acc + getAttemptedCountBySection(i),0);
+      summaryNote.textContent = `You attempted ${totalAttempted} out of ${totalQuestions} sections/questions.`;
+
+      overlay.style.display = 'flex';
+
+      if (autoSubmit) {
+        // brief delay so user sees the summary
+        setTimeout(() => finalizeSubmission(true), 700);
+      }
+    }
+
+    btnNo.addEventListener('click', () => overlay.style.display = 'none');
+    btnYes.addEventListener('click', () => finalizeSubmission(false));
+    openSummaryBtn.addEventListener('click', () => openSummary(false));
+
+    // Simple email analyzer (heuristics) - returns object
+    function analyzeEmail(email){
+      const feedback = [];
+      const suggestions = [];
+      const to = (email.to||'').trim();
+      const subj = (email.subject||'').trim();
+      let body = (email.body||'').trim();
+
+      // recipient check
+      if (!to) { feedback.push('Recipient (To) missing.'); suggestions.push('Add recipient email (e.g., name@domain.com).'); }
+      else {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!re.test(to)) { feedback.push('Recipient email format seems incorrect.'); suggestions.push('Check recipient email for typos.'); }
+      }
+
+      if (!subj) { feedback.push('Subject is empty.'); suggestions.push('Add a concise subject.'); }
+
+      if (!body || body.length < 15) { feedback.push('Message body is too short.'); suggestions.push('Provide 2–4 sentences with next steps.'); }
+
+      // greeting check
+      const firstLine = (body.split(/\n/)[0] || '');
+      const hasGreeting = /\b(hi|hello|dear|greetings)\b/i.test(firstLine);
+      if (!hasGreeting) { feedback.push('Greeting not detected at beginning.'); suggestions.push('Begin with "Hi Anna," or "Dear Mr. Kumar,".'); }
+
+      // punctuation heuristic
+      const sentences = body.split(/(?<=[.?!])\s+/);
+      const missingPunc = sentences.filter(s => s && !/[.?!]$/.test(s.trim()));
+      if (missingPunc.length > 0) { feedback.push('Some sentences may be missing end punctuation.'); suggestions.push('End sentences with a period or question mark.'); }
+
+      // simple capitalization fix (i -> I)
+      const corrected = body.replace(/\b i \b/g, ' I ').replace(/\bi\'m\b/gi, "I'm").replace(/\bi've\b/gi, "I've");
+
+      // tone (naive)
+      if (/\b(angry|stupid|useless|never)\b/i.test(body)) { feedback.push('Possible negative tone detected.'); suggestions.push('Use neutral and professional language.'); }
+
+      return { ok: feedback.length === 0, feedback, suggestions, corrected };
+    }
+
+    function analyzeReply(text){
+      const fb = [];
+      const t = (text||'').trim();
+      if (!t) fb.push('Reply is empty.');
+      else if (t.length < 15) fb.push('Reply is short — consider adding one more sentence.');
+      else if (t.length > 400) fb.push('Reply is long — aim for 1–3 concise sentences.');
+      else fb.push('Reply looks appropriate — polite and concise is good.');
+      return fb;
+    }
+
+    // finalize submission: analyze and show results
+    function finalizeSubmission(isAuto){
+      overlay.style.display = 'none';
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+      // Analyze email and reply
+      const emailResult = analyzeEmail(answers.email);
+      const replyResult = analyzeReply(answers.reply.text);
+
+      // MCQ scoring
+      let totalMcq = 0, correctMcq = 0, mcqAttempted = 0;
+      sections.forEach(s => {
+        if (s.type === 'mcq') {
+          s.questions.forEach(q => {
+            totalMcq++;
+            if (answers.mcq[q.id] !== undefined) mcqAttempted++;
+            if (answers.mcq[q.id] !== undefined && answers.mcq[q.id] === q.answerIndex) correctMcq++;
+          });
+        }
+      });
+
+      // Build result text
+      let result = '';
+      result += isAuto ? 'Time is up. Test auto-submitted.\n\n' : 'Submitted successfully!\n\n';
+      result += `MCQ attempted: ${mcqAttempted}/${totalMcq}\n`;
+      result += `MCQ correct (demo): ${correctMcq}/${totalMcq}\n\n`;
+
+      // Email feedback
+      result += 'Email Analysis:\n';
+      if (emailResult.ok) result += '- Good: Email appears well-formed.\n';
+      else {
+        emailResult.feedback.forEach(f => result += `- ${f}\n`);
+        result += 'Suggestions:\n';
+        emailResult.suggestions.forEach(sug => result += `  • ${sug}\n`);
+      }
+      result += '\nCorrected message preview:\n';
+      result += (emailResult.corrected || '(no content)') + '\n\n';
+
+      // Business reply feedback
+      result += 'Business Reply Feedback:\n';
+      replyResult.forEach(f => result += `- ${f}\n`);
+
+      alert(result);
+
+      // End test: return to start screen (UI unlocked for retake)
+      started = false;
+      testArea.style.display = 'none';
+      startScreen.style.display = 'block';
+      remainingSeconds = totalTestSeconds;
+      updateTimerDisplay();
+      renderSidebar();
+    }
+
+    // initial render
+    renderSidebar();
+    updateTimerDisplay();
+
+    // accessibility: ESC closes summary
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') overlay.style.display = 'none';
+    });
+
+    // (Optional) Keep the uploaded image path commented for your environment.
+    // If you want to use it somewhere, the path in this session is:
+    // /mnt/data/82586a9c-d480-40ec-9a7e-84512ca495a5.png
+    // (You requested a white background; image is not used.)
+  </script>
+</body>
+</html>
